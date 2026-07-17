@@ -3,11 +3,13 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import session from 'express-session';
 import { initDatabase } from './db/database.js';
 import suppliersRouter from './routes/suppliers.js';
 import productsRouter from './routes/products.js';
 import quotesRouter from './routes/quotes.js';
 import dashboardRouter from './routes/dashboard.js';
+import authRouter from './routes/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,10 +23,22 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Sessão
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'seu-segredo-super-secreto-mude-em-producao',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { 
+    secure: false, // Mude para true em produção com HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+  }
+}));
+
 // Inicializar banco de dados
 await initDatabase();
 
 // Rotas da API
+app.use('/api/auth', authRouter);
 app.use('/api/suppliers', suppliersRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/quotes', quotesRouter);

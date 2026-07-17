@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS suppliers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,
-  email TEXT,
+  email TEXT UNIQUE NOT NULL,
   phone TEXT,
   address TEXT,
   city TEXT,
@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
   zip_code TEXT,
   cnpj TEXT UNIQUE,
   contact_person TEXT,
+  password_hash TEXT NOT NULL,
   status TEXT DEFAULT 'ativo' CHECK(status IN ('ativo', 'inativo')),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -63,6 +64,7 @@ CREATE TABLE IF NOT EXISTS price_history (
 
 -- Índices para melhor performance
 CREATE INDEX IF NOT EXISTS idx_suppliers_status ON suppliers(status);
+CREATE INDEX IF NOT EXISTS idx_suppliers_email ON suppliers(email);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_quotes_supplier ON quotes(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_quotes_product ON quotes(product_id);
