@@ -10,6 +10,7 @@ import productsRouter from './routes/products.js';
 import quotesRouter from './routes/quotes.js';
 import dashboardRouter from './routes/dashboard.js';
 import authRouter from './routes/auth.js';
+import exportRouter from './routes/export.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +44,7 @@ app.use('/api/suppliers', suppliersRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/quotes', quotesRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/export', exportRouter);
 
 // Rota raiz
 app.get('/', (req, res) => {
