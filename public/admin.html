@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cota-ção - Painel Administrativo</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>🥩 Cota-ção</h1>
+        <p>Admin Panel</p>
+      </div>
+      <nav class="sidebar-menu">
+        <a href="#" onclick="loadView('dashboard')" class="menu-item active" data-view="dashboard">
+          <span class="icon">📊</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" onclick="loadView('suppliers')" class="menu-item" data-view="suppliers">
+          <span class="icon">👥</span>
+          <span>Fornecedores</span>
+        </a>
+        <a href="#" onclick="loadView('products')" class="menu-item" data-view="products">
+          <span class="icon">📦</span>
+          <span>Produtos</span>
+        </a>
+        <a href="#" onclick="loadView('quotes')" class="menu-item" data-view="quotes">
+          <span class="icon">📄</span>
+          <span>Cotações</span>
+        </a>
+        <hr>
+        <a href="#" onclick="handleLogout()" class="menu-item logout">
+          <span class="icon">🚪</span>
+          <span>Logout</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-content">
+          <h2 id="page-title">Dashboard</h2>
+          <div class="header-actions">
+            <span id="user-info">Admin</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="content-area">
+        <!-- Dashboard -->
+        <section id="dashboard" class="view active">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Total de Fornecedores</h3>
+              <p class="stat-value" id="stat-suppliers">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>Total de Produtos</h3>
+              <p class="stat-value" id="stat-products">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>Cotações Ativas</h3>
+              <p class="stat-value" id="stat-active-quotes">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>Cotações Aceitas</h3>
+              <p class="stat-value" id="stat-accepted-quotes">0</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Fornecedores -->
+        <section id="suppliers" class="view">
+          <div class="section-header">
+            <h2>Gerenciar Fornecedores</h2>
+            <button class="btn-primary" onclick="openSupplierModal()">+ Novo Fornecedor</button>
+          </div>
+          <div class="list-section">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Telefone</th>
+                  <th>Cidade</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="suppliers-list"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Produtos -->
+        <section id="products" class="view">
+          <div class="section-header">
+            <h2>Gerenciar Produtos</h2>
+            <button class="btn-primary" onclick="openProductModal()">+ Novo Produto</button>
+          </div>
+          <div class="list-section">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>Categoria</th>
+                  <th>Unidade</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="products-list"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Cotações -->
+        <section id="quotes" class="view">
+          <div class="section-header">
+            <h2>Gerenciar Cotações</h2>
+            <button class="btn-primary" onclick="openQuoteModal()">+ Nova Cotação</button>
+          </div>
+          <div class="list-section">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Fornecedor</th>
+                  <th>Produto</th>
+                  <th>Quantidade</th>
+                  <th>Preço Unit.</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="quotes-list"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2 id="modal-title"></h2>
+      <form id="modal-form" class="form-grid" onsubmit="submitModalForm(event)"></form>
+    </div>
+  </div>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>

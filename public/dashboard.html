@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cota-ção - Dashboard do Fornecedor</title>
+  <link rel="stylesheet" href="css/supplier-dashboard.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div>
+          <h1>🥩 Cota-ção</h1>
+          <p id="supplier-name">Carregando...</p>
+        </div>
+        <div class="header-actions">
+          <a href="#" onclick="openProfileModal()" class="btn-secondary">👤 Perfil</a>
+          <a href="#" onclick="handleLogout()" class="btn-danger">🚪 Logout</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <section class="quotes-section">
+        <h2>Minhas Cotações</h2>
+        <p class="section-subtitle">Aqui você pode visualizar e responder às cotações enviadas</p>
+        
+        <div class="quotes-grid" id="quotes-grid">
+          <!-- Cotações serão carregadas aqui -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Profile Modal -->
+  <div id="profileModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeProfileModal()">&times;</span>
+      <h2>Meu Perfil</h2>
+      <form id="profileForm" class="form-grid" onsubmit="submitProfileForm(event)">
+        <input type="text" id="profileName" placeholder="Nome" disabled>
+        <input type="email" id="profileEmail" placeholder="Email" disabled>
+        <input type="tel" id="profilePhone" placeholder="Telefone">
+        <input type="text" id="profileCity" placeholder="Cidade">
+        <input type="text" id="profileState" placeholder="Estado">
+        <input type="text" id="profileAddress" placeholder="Endereço">
+        <input type="text" id="profileZipCode" placeholder="CEP">
+        <input type="text" id="profileCNPJ" placeholder="CNPJ">
+        <input type="text" id="profileContact" placeholder="Pessoa de Contato">
+        <button type="submit" class="btn-primary" style="grid-column: 1 / -1;">Salvar Alterações</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Quote Detail Modal -->
+  <div id="quoteModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeQuoteModal()">&times;</span>
+      <h2>Detalhes da Cotação</h2>
+      <div id="quoteDetails"></div>
+      <div id="quoteActions" class="quote-actions"></div>
+    </div>
+  </div>
+
+  <script src="js/supplier-dashboard.js"></script>
+</body>
+</html>
