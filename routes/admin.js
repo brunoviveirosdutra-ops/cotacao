@@ -8,9 +8,12 @@ const router = express.Router();
 router.post('/login', async (req, res) => {
   try {
     const db = await getDatabase();
+
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
       return res.status(400).json({
         error: 'Email e senha são obrigatórios'
       });
@@ -18,7 +21,7 @@ router.post('/login', async (req, res) => {
 
     const admin = await db.get(
       'SELECT * FROM admins WHERE email = ?',
-      [email]
+      normalizedEmail
     );
 
     if (!admin) {
@@ -38,26 +41,36 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    req.session.admin = {
-      id: admin.id,
-      name: admin.name,
-      email: admin.email
-    };
+    // Regenera a sessão para evitar Session Fixation
+    req.session.regenerate((err) => {
+      if (err) {
+        return res.status(500).json({
+          error: 'Erro ao iniciar sessão'
+        });
+      }
 
-    res.json({
-      success: true,
-      admin: {
+      req.session.admin = {
         id: admin.id,
         name: admin.name,
         email: admin.email
-      }
+      };
+
+      res.json({
+        success: true,
+        message: 'Login realizado com sucesso',
+        admin: {
+          id: admin.id,
+          name: admin.name,
+          email: admin.email
+        }
+      });
     });
 
-  } catch (erro) {
-    console.error(erro);
+  } catch (error) {
+    console.error('Erro no login do administrador:', error);
 
     res.status(500).json({
-      error: 'Erro interno'
+      error: 'Erro interno do servidor'
     });
   }
 });
@@ -65,7 +78,7 @@ router.post('/login', async (req, res) => {
 // Verificar sessão do administrador
 router.get('/me', (req, res) => {
 
-  if (!req.session.admin) {
+  if (!req.session?.admin) {
     return res.status(401).json({
       error: 'Não autenticado'
     });
@@ -78,10 +91,21 @@ router.get('/me', (req, res) => {
 // Logout
 router.post('/logout', (req, res) => {
 
-  delete req.session.admin;
+  req.session.destroy((err) => {
 
-  res.json({
-    success: true
+    if (err) {
+      return res.status(500).json({
+        error: 'Erro ao fazer logout'
+      });
+    }
+
+    res.clearCookie('connect.sid');
+
+    res.json({
+      success: true,
+      message: 'Logout realizado com sucesso'
+    });
+
   });
 
 });

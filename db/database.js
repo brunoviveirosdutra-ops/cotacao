@@ -17,43 +17,57 @@ export async function getDatabase() {
 
 export async function initDatabase() {
   try {
-    const dbPath = path.join(__dirname, '..', 'data', 'quotation.db');
+    // Criar pasta data caso não exista
+    const dataDir = path.join(__dirname, '..', 'data');
 
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+
+    // Caminho do banco
+    const dbPath = process.env.DATABASE_PATH
+      ? path.resolve(process.env.DATABASE_PATH)
+      : path.join(dataDir, 'quotation.db');
+
+    // Abrir banco
     db = await open({
       filename: dbPath,
       driver: sqlite3.Database
     });
 
-    // Habilitar foreign keys
+    // Habilitar chaves estrangeiras
     await db.exec('PRAGMA foreign_keys = ON');
 
-    // Ler e executar schema
+    // Executar schema
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
     const statements = schema
       .split(';')
-      .filter(stmt => stmt.trim());
+      .filter(statement => statement.trim());
 
     for (const statement of statements) {
       await db.exec(statement + ';');
     }
 
-    // Criar administrador padrão, caso não exista
+    // Criar administrador padrão, se ainda não existir
     const admin = await db.get('SELECT id FROM admins LIMIT 1');
 
     if (!admin) {
-      const senhaHash = await bcrypt.hash('Admin@123', 10);
+      const adminEmail = process.env.ADMIN_EMAIL;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+
+      const senhaHash = await bcrypt.hash(adminPassword, 10);
 
       await db.run(
         `INSERT INTO admins (name, email, password_hash)
          VALUES (?, ?, ?)`,
-        ['Administrador', 'admin@cotacao.com', senhaHash]
+        ['Administrador', adminEmail, senhaHash]
       );
 
       console.log('✅ Administrador padrão criado');
-      console.log('📧 Email: admin@cotacao.com');
-      console.log('🔑 Senha: Admin@123');
+      console.log(`📧 Email: ${adminEmail}`);
+      console.log('🔐 Senha definida através do arquivo .env');
     }
 
     console.log('✅ Banco de dados inicializado com sucesso');
