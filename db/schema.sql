@@ -71,3 +71,14 @@ CREATE INDEX IF NOT EXISTS idx_quotes_product ON quotes(product_id);
 CREATE INDEX IF NOT EXISTS idx_quotes_status ON quotes(status);
 CREATE INDEX IF NOT EXISTS idx_price_history_supplier ON price_history(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_price_history_product ON price_history(product_id);
+-- Tabela de Administradores
+CREATE TABLE IF NOT EXISTS admins (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  status TEXT DEFAULT 'ativo' CHECK(status IN ('ativo', 'inativo')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
