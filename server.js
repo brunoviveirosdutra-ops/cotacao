@@ -10,6 +10,7 @@ import productsRouter from './routes/products.js';
 import quotesRouter from './routes/quotes.js';
 import dashboardRouter from './routes/dashboard.js';
 import authRouter from './routes/auth.js';
+import adminRouter from './routes/admin.js';
 import exportRouter from './routes/export.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,7 +20,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -40,6 +44,7 @@ await initDatabase();
 
 // Rotas da API
 app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/suppliers', suppliersRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/quotes', quotesRouter);

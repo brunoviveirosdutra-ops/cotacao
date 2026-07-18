@@ -321,16 +321,60 @@ async function submitModalForm(e) {
 }
 
 // Logout
+// Logout
 async function handleLogout() {
   try {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login.html';
+
+    await fetch('/api/admin/logout', {
+      method: 'POST'
+    });
+
+    window.location.href = '/admin-login.html';
+
   } catch (error) {
+
     console.error('Erro ao fazer logout:', error);
+
   }
 }
 
+
 // Initialize
-window.addEventListener('load', () => {
-  loadView('dashboard');
+window.addEventListener('load', async () => {
+
+  try {
+
+    const resposta = await fetch('/api/admin/me');
+
+    if (!resposta.ok) {
+
+      window.location.href = "/admin-login.html";
+      return;
+
+    }
+
+
+    const admin = await resposta.json();
+
+
+    const userInfo = document.getElementById('user-info');
+
+    if(userInfo){
+
+      userInfo.textContent = admin.name;
+
+    }
+
+
+    loadView('dashboard');
+
+
+  } catch (erro) {
+
+    console.error('Erro ao verificar administrador:', erro);
+
+    window.location.href = "/admin-login.html";
+
+  }
+
 });
