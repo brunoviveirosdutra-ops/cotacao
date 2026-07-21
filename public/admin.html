@@ -15,29 +15,37 @@
         <p>Admin Panel</p>
       </div>
       <nav class="sidebar-menu">
-        <a href="javascript:void(0)" onclick="loadView('suppliers')" class="menu-item">
-          <span class="icon">📊</span>
-          <span>Dashboard</span>
-        </a>
-        <a href="javascript:void(0)" onclick="loadView('suppliers')" class="menu-item">
-          <span class="icon">👥</span>
-          <span>Fornecedores</span>
-        </a>
-        <a href="javascript:void(0)" onclick="loadView('suppliers')" class="menu-item">
-          <span class="icon">📦</span>
-          <span>Produtos</span>
-        </a>
-        <a href="javascript:void(0)" onclick="loadView('suppliers')" class="menu-item">
-          <span class="icon">📄</span>
-          <span>Cotações</span>
-        </a>
-        <hr>
-        <a href="javascript:void(0)" onclick="loadView('suppliers')" class="menu-item">
-          <span class="icon">🚪</span>
-          <span>Logout</span>
-        </a>
-      </nav>
-    </aside>
+
+    <a href="#" class="menu-item" data-view="dashboard">
+        <span class="icon">📊</span>
+        <span>Dashboard</span>
+    </a>
+
+    <a href="#" class="menu-item" data-view="suppliers">
+        <span class="icon">👥</span>
+        <span>Fornecedores</span>
+    </a>
+
+    <a href="#" class="menu-item" data-view="products">
+        <span class="icon">📦</span>
+        <span>Produtos</span>
+    </a>
+
+    <a href="#" class="menu-item" data-view="quotes">
+        <span class="icon">📄</span>
+        <span>Cotações</span>
+    </a>
+
+    <hr>
+
+    <a href="#" class="menu-item" data-view="logout">
+        <span class="icon">🚪</span>
+        <span>Logout</span>
+    </a>
+
+</nav>
+        
+       </aside>
 
     <!-- Main Content -->
     <main class="main-content">

@@ -26,22 +26,41 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-// Segurança
-app.use(helmet());
+/* ======================================================
+   SEGURANÇA
+====================================================== */
 
-// Compressão das respostas
+app.use(
+  helmet({
+    // Durante o desenvolvimento deixamos a CSP desabilitada.
+    // Depois iremos habilitá-la corretamente.
+    contentSecurityPolicy: false
+  })
+);
+
+/* ======================================================
+   COMPRESSÃO
+====================================================== */
+
 app.use(compression());
 
-// CORS
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-  credentials: true
-}));
+/* ======================================================
+   CORS
+====================================================== */
 
-// Limite de requisições
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    credentials: true
+  })
+);
+
+/* ======================================================
+   LIMITADOR DE REQUISIÇÕES
+====================================================== */
+
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   limit: 100,
   standardHeaders: true,
   legacyHeaders: false
@@ -49,30 +68,55 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-// Body Parser
+/* ======================================================
+   BODY PARSER
+====================================================== */
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Arquivos estáticos
+/* ======================================================
+   SESSÃO
+====================================================== */
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'cotacao-secret-2026',
+    resave: false,
+    saveUninitialized: false,
+
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000
+    }
+  })
+);
+
+/* ======================================================
+   ARQUIVOS ESTÁTICOS
+====================================================== */
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Sessão
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000
-  }
-}));
+/* ======================================================
+   BANCO DE DADOS
+====================================================== */
 
-// Inicializar banco de dados
-await initDatabase();
+try {
+  await initDatabase();
+  console.log('✅ Banco de dados inicializado com sucesso');
+} catch (erro) {
+  console.error('❌ Erro ao inicializar o banco de dados');
+  console.error(erro);
+  process.exit(1);
+}
 
-// Rotas da API
+/* ======================================================
+   ROTAS DA API
+====================================================== */
+
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/suppliers', suppliersRouter);
@@ -81,32 +125,75 @@ app.use('/api/quotes', quotesRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/export', exportRouter);
 
-// Rota raiz
+/* ======================================================
+   ROTA PRINCIPAL
+====================================================== */
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Rota não encontrada (404)
+/* ======================================================
+   404
+====================================================== */
+
 app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Rota não encontrada'
-  });
+
+  if (req.originalUrl.startsWith('/api')) {
+
+    return res.status(404).json({
+      success: false,
+      message: 'Rota não encontrada'
+    });
+
+  }
+
+  res.status(404).sendFile(
+    path.join(__dirname, 'public', '404.html')
+  );
+
 });
 
-// Middleware global de erros
+/* ======================================================
+   ERROS
+====================================================== */
+
 app.use((err, req, res, next) => {
+
   console.error(err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
 
   res.status(500).json({
     success: false,
     message: 'Erro interno do servidor'
   });
+
 });
 
-// Iniciar servidor
+/* ======================================================
+   PROCESSO
+====================================================== */
+
+process.on('unhandledRejection', (err) => {
+  console.error('❌ Promise rejeitada:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('❌ Exceção não tratada:', err);
+});
+
+/* ======================================================
+   SERVIDOR
+====================================================== */
+
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+  console.log('========================================');
+  console.log('🚀 Servidor iniciado');
+  console.log(`🌐 http://localhost:${PORT}`);
+  console.log('========================================');
 });
 
 export default app;

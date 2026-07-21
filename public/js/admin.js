@@ -1,380 +1,1105 @@
-// Admin Dashboard JS
+// ======================================================
+// COTA-ÇÃO - PAINEL ADMINISTRATIVO
+// admin.js
+// ======================================================
 
-let currentView = 'dashboard';
-let suppliers = [];
-let products = [];
-let quotes = [];
-let currentModal = null;
+const App = {
 
-// Load View
-function loadView(view) {
-  currentView = view;
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(view).classList.add('active');
-  
-  document.querySelectorAll('[data-view]').forEach(item => item.classList.remove('active'));
-  document.querySelector(`[data-view="${view}"]`).classList.add('active');
-  
-  document.getElementById('page-title').textContent = 
-    view.charAt(0).toUpperCase() + view.slice(1);
+    currentView: "dashboard",
 
-  if (view === 'dashboard') loadDashboard();
-  else if (view === 'suppliers') loadSuppliers();
-  else if (view === 'products') loadProducts();
-  else if (view === 'quotes') loadQuotes();
+    suppliers: [],
+
+    products: [],
+
+    quotes: [],
+
+    currentModal: null
+
+};
+
+// ======================================================
+// API
+// ======================================================
+
+const API = {
+
+    async request(url, options = {}) {
+
+        const response = await fetch(url, {
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            ...options
+        });
+
+        if (!response.ok) {
+
+            let message = "Erro interno";
+
+            try {
+
+                const erro = await response.json();
+
+                message = erro.error || erro.message || message;
+
+            } catch {}
+
+            throw new Error(message);
+
+        }
+
+        if (response.status === 204) {
+
+            return null;
+
+        }
+
+        return response.json();
+
+    },
+
+    get(url) {
+
+        return this.request(url);
+
+    },
+
+    post(url, data) {
+
+        return this.request(url, {
+
+            method: "POST",
+
+            body: JSON.stringify(data)
+
+        });
+
+    },
+
+    put(url, data) {
+
+        return this.request(url, {
+
+            method: "PUT",
+
+            body: JSON.stringify(data)
+
+        });
+
+    },
+
+    delete(url) {
+
+        return this.request(url, {
+
+            method: "DELETE"
+
+        });
+
+    }
+
+};
+
+// ======================================================
+// INICIALIZAÇÃO
+// ======================================================
+
+window.addEventListener("DOMContentLoaded", init);
+
+async function init() {
+
+    try {
+
+        const admin = await API.get("/api/admin/me");
+
+        const info = document.getElementById("user-info");
+
+        if (info) {
+
+            info.textContent = admin.name;
+
+        }
+
+        configurarMenu();
+
+        await loadDashboard();
+
+        showView("dashboard");
+
+    }
+
+    catch (erro) {
+
+        console.error(erro);
+
+        window.location.href = "/admin-login.html";
+
+    }
+
 }
 
-// Dashboard
+// ======================================================
+// MENU
+// ======================================================
+
+function configurarMenu() {
+
+    document
+        .querySelectorAll(".menu-item")
+        .forEach(item => {
+
+            item.addEventListener("click", e => {
+
+                e.preventDefault();
+
+                const view = item.dataset.view;
+
+                if (!view) return;
+
+                if (view === "logout") {
+
+                    logout();
+
+                    return;
+
+                }
+
+                loadView(view);
+
+            });
+
+        });
+
+}
+
+// ======================================================
+// TROCAR TELA
+// ======================================================
+
+async function loadView(view) {
+
+    App.currentView = view;
+
+    showView(view);
+
+    switch(view){
+
+        case "dashboard":
+
+            await loadDashboard();
+
+            break;
+
+        case "suppliers":
+
+            await loadSuppliers();
+
+            break;
+
+        case "products":
+
+            await loadProducts();
+
+            break;
+
+        case "quotes":
+
+            await loadQuotes();
+
+            break;
+
+    }
+
+}
+
+// ======================================================
+// MOSTRAR TELA
+// ======================================================
+
+function showView(view){
+
+    document
+        .querySelectorAll(".view")
+        .forEach(section=>{
+
+            section.classList.remove("active");
+
+        });
+
+    const section = document.getElementById(view);
+
+    if(section){
+
+        section.classList.add("active");
+
+    }
+
+    document
+        .querySelectorAll(".menu-item")
+        .forEach(item=>{
+
+            item.classList.remove("active");
+
+        });
+
+    const active = document.querySelector(`[data-view="${view}"]`);
+
+    if(active){
+
+        active.classList.add("active");
+
+    }
+
+    const titulo = document.getElementById("page-title");
+
+    if(titulo){
+
+        titulo.textContent =
+            view.charAt(0).toUpperCase()+view.slice(1);
+
+    }
+
+}
+// ======================================================
+// DASHBOARD
+// ======================================================
+
 async function loadDashboard() {
-  try {
-    const [suppliersRes, productsRes, quotesRes] = await Promise.all([
-      fetch('/api/suppliers'),
-      fetch('/api/products'),
-      fetch('/api/quotes')
-    ]);
 
-    const suppliersData = await suppliersRes.json();
-    const productsData = await productsRes.json();
-    const quotesData = await quotesRes.json();
+    try {
 
-    document.getElementById('stat-suppliers').textContent = suppliersData.length;
-    document.getElementById('stat-products').textContent = productsData.length;
-    document.getElementById('stat-active-quotes').textContent = 
-      quotesData.filter(q => q.status === 'ativa').length;
-    document.getElementById('stat-accepted-quotes').textContent = 
-      quotesData.filter(q => q.status === 'aceita').length;
-  } catch (error) {
-    console.error('Erro ao carregar dashboard:', error);
-  }
+        const [
+            suppliers,
+            products,
+            quotes
+        ] = await Promise.all([
+
+            API.get("/api/suppliers"),
+
+            API.get("/api/products"),
+
+            API.get("/api/quotes")
+
+        ]);
+
+        document.getElementById("stat-suppliers").textContent =
+            suppliers.length;
+
+        document.getElementById("stat-products").textContent =
+            products.length;
+
+        document.getElementById("stat-active-quotes").textContent =
+            quotes.filter(q => q.status === "ativa").length;
+
+        document.getElementById("stat-accepted-quotes").textContent =
+            quotes.filter(q => q.status === "aceita").length;
+
+    }
+
+    catch (erro) {
+
+        console.error(erro);
+
+        alert("Erro ao carregar dashboard.");
+
+    }
+
 }
 
-// Suppliers
+// ======================================================
+// FORNECEDORES
+// ======================================================
+
 async function loadSuppliers() {
-  try {
-    const res = await fetch('/api/suppliers');
-    suppliers = await res.json();
-    renderSuppliers();
-  } catch (error) {
-    console.error('Erro ao carregar fornecedores:', error);
-  }
+
+    alert("loadSuppliers foi chamada")
+
+    try {
+
+        App.suppliers =
+            await API.get("/api/suppliers");
+
+        renderSuppliers();
+
+    }
+
+    catch (erro) {
+
+        console.error(erro);
+
+        alert("Erro ao carregar fornecedores.");
+
+    }
+
 }
+
+// ======================================================
+// TABELA
+// ======================================================
 
 function renderSuppliers() {
-  const tbody = document.getElementById('suppliers-list');
-  tbody.innerHTML = suppliers.map(s => `
-    <tr>
-      <td>${s.id}</td>
-      <td>${s.name}</td>
-      <td>${s.email}</td>
-      <td>${s.phone || '-'}</td>
-      <td>${s.city || '-'}</td>
-      <td><span class="status-badge status-${s.status}">${s.status}</span></td>
-      <td>
-        <button class="btn-edit" onclick="editSupplier(${s.id})">Editar</button>
-        <button class="btn-delete" onclick="deleteSupplier(${s.id})">Deletar</button>
-      </td>
-    </tr>
-  `).join('');
-}
 
-function openSupplierModal(id = null) {
-  currentModal = { type: 'supplier', id };
-  document.getElementById('modal-title').textContent = id ? 'Editar Fornecedor' : 'Novo Fornecedor';
-  
-  const supplier = id ? suppliers.find(s => s.id === id) : null;
-  
-  document.getElementById('modal-form').innerHTML = `
-    <input type="text" id="name" placeholder="Nome" value="${supplier?.name || ''}" required>
-    <input type="email" id="email" placeholder="Email" value="${supplier?.email || ''}" required>
-    <input type="tel" id="phone" placeholder="Telefone" value="${supplier?.phone || ''}">
-    <input type="text" id="city" placeholder="Cidade" value="${supplier?.city || ''}">
-    <input type="text" id="address" placeholder="Endereço" value="${supplier?.address || ''}">
-    <input type="text" id="state" placeholder="Estado" value="${supplier?.state || ''}">
-    <input type="text" id="zip_code" placeholder="CEP" value="${supplier?.zip_code || ''}">
-    <input type="text" id="cnpj" placeholder="CNPJ" value="${supplier?.cnpj || ''}">
-    <input type="text" id="contact_person" placeholder="Pessoa de Contato" value="${supplier?.contact_person || ''}">
-    <select id="status" value="${supplier?.status || 'ativo'}">
-      <option value="ativo">Ativo</option>
-      <option value="inativo">Inativo</option>
-    </select>
-    ${!id ? '<input type="password" id="password" placeholder="Senha" required>' : ''}
-    <button type="submit" class="btn-primary">Salvar</button>
-  `;
-  
-  document.getElementById('modal').classList.add('active');
-}
+    alert("renderSuppliers");
+    console.log(App.suppliers);
 
-function editSupplier(id) {
-  openSupplierModal(id);
-}
+    const tbody =
+        document.getElementById("suppliers-list");
 
-async function deleteSupplier(id) {
-  if (!confirm('Tem certeza que deseja deletar este fornecedor?')) return;
-  
-  try {
-    const res = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      loadSuppliers();
+        alert(tbody? "tbody encontrado" : "tbody NÃO encontrado");
+
+    tbody.innerHTML = "";
+
+    if (!App.suppliers.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Nenhum fornecedor encontrado.
+                </td>
+            </tr>
+        `;
+
+        return;
+
     }
-  } catch (error) {
-    console.error('Erro ao deletar:', error);
-  }
+
+    App.suppliers.forEach(supplier => {
+
+        tbody.insertAdjacentHTML("beforeend", `
+
+            <tr>
+
+                <td>${supplier.id}</td>
+
+                <td>${supplier.name}</td>
+
+                <td>${supplier.email}</td>
+
+                <td>${supplier.phone || "-"}</td>
+
+                <td>${supplier.city || "-"}</td>
+
+                <td>
+
+                    <span class="status-badge status-${supplier.status}">
+
+                        ${supplier.status}
+
+                    </span>
+
+                </td>
+
+                <td>
+
+                    <button
+                        class="btn-edit"
+                        data-id="${supplier.id}">
+
+                        Editar
+
+                    </button>
+
+                    <button
+                        class="btn-delete"
+                        data-id="${supplier.id}">
+
+                        Excluir
+
+                    </button>
+
+                </td>
+
+            </tr>
+
+        `);
+
+    });
+
+    configurarEventosFornecedor();
+
 }
 
-// Products
+// ======================================================
+// EVENTOS
+// ======================================================
+
+function configurarEventosFornecedor() {
+
+    document
+        .querySelectorAll(".btn-edit")
+        .forEach(botao => {
+
+            botao.onclick = () => {
+
+                const id =
+                    Number(botao.dataset.id);
+
+                openSupplierModal(id);
+
+            };
+
+        });
+
+    document
+        .querySelectorAll(".btn-delete")
+        .forEach(botao => {
+
+            botao.onclick = () => {
+
+                const id =
+                    Number(botao.dataset.id);
+
+                deleteSupplier(id);
+
+            };
+
+        });
+
+}
+
+// ======================================================
+// DELETAR
+// ======================================================
+
+async function deleteSupplier(id){
+
+    const confirmar =
+        confirm("Deseja realmente excluir este fornecedor?");
+
+    if(!confirmar){
+
+        return;
+
+    }
+
+    try{
+
+        await API.delete(`/api/suppliers/${id}`);
+
+        await loadSuppliers();
+
+        alert("Fornecedor removido com sucesso.");
+
+    }
+
+    catch(erro){
+
+        console.error(erro);
+
+        alert(erro.message);
+
+    }
+
+}
+// ======================================================
+// PRODUTOS
+// ======================================================
+
 async function loadProducts() {
-  try {
-    const res = await fetch('/api/products');
-    products = await res.json();
-    renderProducts();
-  } catch (error) {
-    console.error('Erro ao carregar produtos:', error);
-  }
+
+    try {
+
+        App.products = await API.get("/api/products");
+
+        renderProducts();
+
+    } catch (erro) {
+
+        console.error(erro);
+
+        alert("Erro ao carregar produtos.");
+
+    }
+
 }
 
 function renderProducts() {
-  const tbody = document.getElementById('products-list');
-  tbody.innerHTML = products.map(p => `
-    <tr>
-      <td>${p.id}</td>
-      <td>${p.name}</td>
-      <td>${p.category}</td>
-      <td>${p.unit}</td>
-      <td><span class="status-badge status-${p.status}">${p.status}</span></td>
-      <td>
-        <button class="btn-edit" onclick="editProduct(${p.id})">Editar</button>
-        <button class="btn-delete" onclick="deleteProduct(${p.id})">Deletar</button>
-      </td>
-    </tr>
-  `).join('');
+
+    const tbody = document.getElementById("products-list");
+
+    tbody.innerHTML = "";
+
+    if (!App.products.length) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6">
+                    Nenhum produto encontrado.
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+    App.products.forEach(product => {
+
+        tbody.insertAdjacentHTML("beforeend",`
+
+            <tr>
+
+                <td>${product.id}</td>
+
+                <td>${product.name}</td>
+
+                <td>${product.category}</td>
+
+                <td>${product.unit}</td>
+
+                <td>
+
+                    <span class="status-badge status-${product.status}">
+                        ${product.status}
+                    </span>
+
+                </td>
+
+                <td>
+
+                    <button
+                        class="btn-edit-product"
+                        data-id="${product.id}">
+                        Editar
+                    </button>
+
+                    <button
+                        class="btn-delete-product"
+                        data-id="${product.id}">
+                        Excluir
+                    </button>
+
+                </td>
+
+            </tr>
+
+        `);
+
+    });
+
+    configurarEventosProdutos();
+
 }
+
+function configurarEventosProdutos(){
+
+    document
+        .querySelectorAll(".btn-edit-product")
+        .forEach(btn=>{
+
+            btn.onclick=()=>{
+
+                openProductModal(
+                    Number(btn.dataset.id)
+                );
+
+            }
+
+        });
+
+    document
+        .querySelectorAll(".btn-delete-product")
+        .forEach(btn=>{
+
+            btn.onclick=()=>{
+
+                deleteProduct(
+                    Number(btn.dataset.id)
+                );
+
+            }
+
+        });
+
+}
+
+async function deleteProduct(id){
+
+    if(!confirm("Deseja excluir este produto?")){
+
+        return;
+
+    }
+
+    try{
+
+        await API.delete(`/api/products/${id}`);
+
+        await loadProducts();
+
+        alert("Produto removido.");
+
+    }
+
+    catch(erro){
+
+        console.error(erro);
+
+        alert(erro.message);
+
+    }
+
+}
+
+// ======================================================
+// COTAÇÕES
+// ======================================================
+
+async function loadQuotes(){
+
+    try{
+
+        App.quotes = await API.get("/api/quotes");
+
+        renderQuotes();
+
+    }
+
+    catch(erro){
+
+        console.error(erro);
+
+        alert("Erro ao carregar cotações.");
+
+    }
+
+}
+
+function renderQuotes(){
+
+    const tbody =
+        document.getElementById("quotes-list");
+
+    tbody.innerHTML="";
+
+    if(!App.quotes.length){
+
+        tbody.innerHTML=`
+
+            <tr>
+
+                <td colspan="8">
+
+                    Nenhuma cotação encontrada.
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+    App.quotes.forEach(quote=>{
+
+        tbody.insertAdjacentHTML("beforeend",`
+
+            <tr>
+
+                <td>${quote.id}</td>
+
+                <td>${quote.supplier_name}</td>
+
+                <td>${quote.product_name}</td>
+
+                <td>${quote.quantity}</td>
+
+                <td>
+
+                    R$
+                    ${Number(quote.unit_price).toFixed(2)}
+
+                </td>
+
+                <td>
+
+                    R$
+                    ${Number(quote.total_price).toFixed(2)}
+
+                </td>
+
+                <td>
+
+                    <span class="status-badge status-${quote.status}">
+
+                        ${quote.status}
+
+                    </span>
+
+                </td>
+
+                <td>
+
+                    <button
+                        class="btn-edit-quote"
+                        data-id="${quote.id}">
+
+                        Editar
+
+                    </button>
+
+                    <button
+                        class="btn-delete-quote"
+                        data-id="${quote.id}">
+
+                        Excluir
+
+                    </button>
+
+                </td>
+
+            </tr>
+
+        `);
+
+    });
+
+    configurarEventosQuotes();
+
+}
+
+function configurarEventosQuotes(){
+
+    document
+        .querySelectorAll(".btn-edit-quote")
+        .forEach(btn=>{
+
+            btn.onclick=()=>{
+
+                openQuoteModal(
+
+                    Number(btn.dataset.id)
+
+                );
+
+            }
+
+        });
+
+    document
+        .querySelectorAll(".btn-delete-quote")
+        .forEach(btn=>{
+
+            btn.onclick=()=>{
+
+                deleteQuote(
+
+                    Number(btn.dataset.id)
+
+                );
+
+            }
+
+        });
+
+}
+
+async function deleteQuote(id){
+
+    if(!confirm("Deseja excluir esta cotação?")){
+
+        return;
+
+    }
+
+    try{
+
+        await API.delete(`/api/quotes/${id}`);
+
+        await loadQuotes();
+
+        alert("Cotação removida.");
+
+    }
+
+    catch(erro){
+
+        console.error(erro);
+
+        alert(erro.message);
+
+    }
+
+}
+// ======================================================
+// MODAL
+// ======================================================
+
+function closeModal() {
+
+    document.getElementById("modal").style.display = "none";
+
+    document.getElementById("modal-form").innerHTML = "";
+
+    App.currentModal = null;
+
+}
+
+// Fecha ao clicar fora do modal
+window.onclick = function (event) {
+
+    const modal = document.getElementById("modal");
+
+    if (event.target === modal) {
+
+        closeModal();
+
+    }
+
+};
+
+// ======================================================
+// FORNECEDORES
+// ======================================================
+
+function openSupplierModal(id = null) {
+
+    App.currentModal = {
+        type: "supplier",
+        id
+    };
+
+    document.getElementById("modal-title").textContent =
+        id ? "Editar Fornecedor" : "Novo Fornecedor";
+
+    document.getElementById("modal-form").innerHTML = `
+
+        <input name="name" placeholder="Nome" required>
+
+        <input name="email" type="email" placeholder="Email" required>
+
+        <input name="phone" placeholder="Telefone">
+
+        <button type="submit">
+
+            Salvar
+
+        </button>
+
+    `;
+
+    document.getElementById("modal").style.display = "block";
+
+}
+
+// ======================================================
+// PRODUTOS
+// ======================================================
 
 function openProductModal(id = null) {
-  currentModal = { type: 'product', id };
-  document.getElementById('modal-title').textContent = id ? 'Editar Produto' : 'Novo Produto';
-  
-  const product = id ? products.find(p => p.id === id) : null;
-  
-  document.getElementById('modal-form').innerHTML = `
-    <input type="text" id="name" placeholder="Nome" value="${product?.name || ''}" required>
-    <select id="category" value="${product?.category || 'carne'}" required>
-      <option value="carne">Carne</option>
-      <option value="frango">Frango</option>
-    </select>
-    <select id="unit" value="${product?.unit || 'kg'}">
-      <option value="kg">Kg</option>
-      <option value="un">Unidade</option>
-      <option value="caixa">Caixa</option>
-    </select>
-    <input type="number" id="min_order_quantity" placeholder="Quantidade Mínima" value="${product?.min_order_quantity || ''}" step="0.01">
-    <select id="status" value="${product?.status || 'ativo'}">
-      <option value="ativo">Ativo</option>
-      <option value="inativo">Inativo</option>
-    </select>
-    <textarea id="description" placeholder="Descrição" style="grid-column: 1 / -1;">${product?.description || ''}</textarea>
-    <button type="submit" class="btn-primary">Salvar</button>
-  `;
-  
-  document.getElementById('modal').classList.add('active');
+
+    App.currentModal = {
+        type: "product",
+        id
+    };
+
+    document.getElementById("modal-title").textContent =
+        id ? "Editar Produto" : "Novo Produto";
+
+    document.getElementById("modal-form").innerHTML = `
+
+        <input name="name" placeholder="Nome" required>
+
+        <input name="category" placeholder="Categoria">
+
+        <input name="unit" placeholder="Unidade">
+
+        <button type="submit">
+
+            Salvar
+
+        </button>
+
+    `;
+
+    document.getElementById("modal").style.display = "block";
+
 }
 
-function editProduct(id) {
-  openProductModal(id);
-}
-
-async function deleteProduct(id) {
-  if (!confirm('Tem certeza que deseja deletar este produto?')) return;
-  
-  try {
-    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      loadProducts();
-    }
-  } catch (error) {
-    console.error('Erro ao deletar:', error);
-  }
-}
-
-// Quotes
-async function loadQuotes() {
-  try {
-    const res = await fetch('/api/quotes');
-    quotes = await res.json();
-    renderQuotes();
-  } catch (error) {
-    console.error('Erro ao carregar cotações:', error);
-  }
-}
-
-function renderQuotes() {
-  const tbody = document.getElementById('quotes-list');
-  tbody.innerHTML = quotes.map(q => `
-    <tr>
-      <td>${q.id}</td>
-      <td>${q.supplier_name}</td>
-      <td>${q.product_name}</td>
-      <td>${q.quantity}</td>
-      <td>R$ ${q.unit_price.toFixed(2)}</td>
-      <td>R$ ${q.total_price.toFixed(2)}</td>
-      <td><span class="status-badge status-${q.status}">${q.status}</span></td>
-      <td>
-        <button class="btn-edit" onclick="editQuote(${q.id})">Editar</button>
-        <button class="btn-delete" onclick="deleteQuote(${q.id})">Deletar</button>
-      </td>
-    </tr>
-  `).join('');
-}
+// ======================================================
+// COTAÇÕES
+// ======================================================
 
 function openQuoteModal(id = null) {
-  currentModal = { type: 'quote', id };
-  document.getElementById('modal-title').textContent = id ? 'Editar Cotação' : 'Nova Cotação';
-  
-  const quote = id ? quotes.find(q => q.id === id) : null;
-  
-  const supplierOptions = suppliers.map(s => `<option value="${s.id}" ${quote?.supplier_id === s.id ? 'selected' : ''}>${s.name}</option>`).join('');
-  const productOptions = products.map(p => `<option value="${p.id}" ${quote?.product_id === p.id ? 'selected' : ''}>${p.name}</option>`).join('');
-  
-  document.getElementById('modal-form').innerHTML = `
-    <select id="supplier_id" required>${supplierOptions}</select>
-    <select id="product_id" required>${productOptions}</select>
-    <input type="number" id="quantity" placeholder="Quantidade" value="${quote?.quantity || ''}" step="0.01" required>
-    <input type="number" id="unit_price" placeholder="Preço Unitário" value="${quote?.unit_price || ''}" step="0.01" required>
-    <input type="date" id="delivery_date" value="${quote?.delivery_date || ''}">
-    <input type="text" id="payment_terms" placeholder="Condições de Pagamento" value="${quote?.payment_terms || ''}">
-    <input type="date" id="validity_date" value="${quote?.validity_date || ''}">
-    <select id="status" value="${quote?.status || 'ativa'}">
-      <option value="ativa">Ativa</option>
-      <option value="aceita">Aceita</option>
-      <option value="rejeitada">Rejeitada</option>
-      <option value="expirada">Expirada</option>
-    </select>
-    <textarea id="notes" placeholder="Observações" style="grid-column: 1 / -1;">${quote?.notes || ''}</textarea>
-    <button type="submit" class="btn-primary">Salvar</button>
-  `;
-  
-  document.getElementById('modal').classList.add('active');
+
+    App.currentModal = {
+        type: "quote",
+        id
+    };
+
+    document.getElementById("modal-title").textContent =
+        id ? "Editar Cotação" : "Nova Cotação";
+
+    document.getElementById("modal-form").innerHTML = `
+
+        <input name="supplier_id" placeholder="Fornecedor">
+
+        <input name="product_id" placeholder="Produto">
+
+        <input
+            name="quantity"
+            type="number"
+            placeholder="Quantidade">
+
+        <input
+            name="unit_price"
+            type="number"
+            step="0.01"
+            placeholder="Preço">
+
+        <button type="submit">
+
+            Salvar
+
+        </button>
+
+    `;
+
+    document.getElementById("modal").style.display = "block";
+
 }
 
-function editQuote(id) {
-  openQuoteModal(id);
-}
+// ======================================================
+// SUBMIT
+// ======================================================
 
-async function deleteQuote(id) {
-  if (!confirm('Tem certeza que deseja deletar esta cotação?')) return;
-  
-  try {
-    const res = await fetch(`/api/quotes/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      loadQuotes();
-    }
-  } catch (error) {
-    console.error('Erro ao deletar:', error);
-  }
-}
+async function submitModalForm(event) {
 
-// Modal Functions
-function closeModal() {
-  document.getElementById('modal').classList.remove('active');
-  currentModal = null;
-}
+    event.preventDefault();
 
-async function submitModalForm(e) {
-  e.preventDefault();
-  
-  const form = document.getElementById('modal-form');
-  const formData = new FormData(form);
-  const data = Object.fromEntries(formData);
-  
-  if (!currentModal) return;
-  
-  try {
-    let url, method;
-    
-    if (currentModal.type === 'supplier') {
-      url = `/api/suppliers${currentModal.id ? '/' + currentModal.id : ''}`;
-      method = currentModal.id ? 'PUT' : 'POST';
-    } else if (currentModal.type === 'product') {
-      url = `/api/products${currentModal.id ? '/' + currentModal.id : ''}`;
-      method = currentModal.id ? 'PUT' : 'POST';
-    } else if (currentModal.type === 'quote') {
-      url = `/api/quotes${currentModal.id ? '/' + currentModal.id : ''}`;
-      method = currentModal.id ? 'PUT' : 'POST';
-    }
-    
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    
-    if (res.ok) {
-      closeModal();
-      loadView(currentView);
-    } else {
-      const error = await res.json();
-      alert('Erro: ' + error.error);
-    }
-  } catch (error) {
-    console.error('Erro:', error);
-    alert('Erro ao salvar');
-  }
-}
+    const form = event.target;
 
-// Logout
-// Logout
-async function handleLogout() {
-  try {
+    const dados = Object.fromEntries(
+        new FormData(form)
+    );
 
-    await fetch('/api/admin/logout', {
-      method: 'POST'
-    });
+    try {
 
-    window.location.href = '/admin-login.html';
+        switch (App.currentModal.type) {
 
-  } catch (error) {
+            case "supplier":
 
-    console.error('Erro ao fazer logout:', error);
+                if (App.currentModal.id) {
 
-  }
-}
+                    await API.put(
+                        `/api/suppliers/${App.currentModal.id}`,
+                        dados
+                    );
 
+                } else {
 
-// Initialize
-window.addEventListener('load', async () => {
+                    await API.post(
+                        "/api/suppliers",
+                        dados
+                    );
 
-  try {
+                }
 
-    const resposta = await fetch('/api/admin/me');
+                await loadSuppliers();
 
-    if (!resposta.ok) {
+                break;
 
-      window.location.href = "/admin-login.html";
-      return;
+            case "product":
 
-    }
+                if (App.currentModal.id) {
 
+                    await API.put(
+                        `/api/products/${App.currentModal.id}`,
+                        dados
+                    );
 
-    const admin = await resposta.json();
+                } else {
 
+                    await API.post(
+                        "/api/products",
+                        dados
+                    );
 
-    const userInfo = document.getElementById('user-info');
+                }
 
-    if(userInfo){
+                await loadProducts();
 
-      userInfo.textContent = admin.name;
+                break;
+
+            case "quote":
+
+                if (App.currentModal.id) {
+
+                    await API.put(
+                        `/api/quotes/${App.currentModal.id}`,
+                        dados
+                    );
+
+                } else {
+
+                    await API.post(
+                        "/api/quotes",
+                        dados
+                    );
+
+                }
+
+                await loadQuotes();
+
+                break;
+
+        }
+
+        closeModal();
+
+        alert("Registro salvo com sucesso.");
 
     }
 
+    catch (erro) {
 
-    loadView('dashboard');
+        console.error(erro);
 
+        alert(erro.message);
 
-  } catch (erro) {
+    }
 
-    console.error('Erro ao verificar administrador:', erro);
+}
 
-    window.location.href = "/admin-login.html";
+// ======================================================
+// LOGOUT
+// ======================================================
 
-  }
+async function logout() {
 
-});
+    if (!confirm("Deseja sair do sistema?")) {
+
+        return;
+
+    }
+
+    try {
+
+        await API.post("/api/admin/logout", {});
+
+        window.location.href = "/admin-login.html";
+
+    }
+
+    catch (erro) {
+
+        alert("Erro ao sair.");
+
+    }
+
+}
+
+// ======================================================
+// FUNÇÕES GLOBAIS
+// ======================================================
+
+window.loadView = loadView;
+window.openSupplierModal = openSupplierModal;
+window.openProductModal = openProductModal;
+window.openQuoteModal = openQuoteModal;
+window.submitModalForm = submitModalForm;
+window.closeModal = closeModal;
+window.logout = logout;

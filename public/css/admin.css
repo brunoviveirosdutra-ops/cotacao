@@ -93,6 +93,7 @@ body {
 /* Main Content */
 .main-content {
   margin-left: 250px;
+  width: calc(100% - 250px);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -132,8 +133,6 @@ body {
 .content-area {
   flex: 1;
   padding: 30px;
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
 }
 
