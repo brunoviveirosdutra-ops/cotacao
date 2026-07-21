@@ -312,114 +312,85 @@ async function loadDashboard() {
 // ======================================================
 
 async function loadSuppliers() {
-
-    alert("loadSuppliers foi chamada")
-
     try {
+        const response = await API.get("/api/suppliers");
 
-        App.suppliers =
-            await API.get("/api/suppliers");
+        // Trata a resposta caso a API retorne um Array direto [...] 
+        // ou um objeto encapsulado { suppliers: [...] } / { data: [...] }
+        if (Array.isArray(response)) {
+            App.suppliers = response;
+        } else if (response && Array.isArray(response.suppliers)) {
+            App.suppliers = response.suppliers;
+        } else if (response && Array.isArray(response.data)) {
+            App.suppliers = response.data;
+        } else {
+            App.suppliers = [];
+        }
 
         renderSuppliers();
 
+    } catch (erro) {
+        console.error("Erro ao carregar fornecedores:", erro);
+        alert("Erro ao carregar fornecedores: " + erro.message);
     }
-
-    catch (erro) {
-
-        console.error(erro);
-
-        alert("Erro ao carregar fornecedores.");
-
-    }
-
 }
 
 // ======================================================
-// TABELA
+// TABELA DE FORNECEDORES
 // ======================================================
 
 function renderSuppliers() {
+    const tbody = document.getElementById("suppliers-list");
 
-    alert("renderSuppliers");
-    console.log(App.suppliers);
-
-    const tbody =
-        document.getElementById("suppliers-list");
-
-        alert(tbody? "tbody encontrado" : "tbody NÃO encontrado");
+    if (!tbody) {
+        console.error("Elemento #suppliers-list não encontrado no DOM.");
+        return;
+    }
 
     tbody.innerHTML = "";
 
-    if (!App.suppliers.length) {
-
+    if (!App.suppliers || App.suppliers.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7">
+                <td colspan="7" style="text-align: center;">
                     Nenhum fornecedor encontrado.
                 </td>
             </tr>
         `;
-
         return;
-
     }
 
     App.suppliers.forEach(supplier => {
+        // Suporta tanto o padrão em inglês (name, phone, city) quanto em português (nome, telefone, cidade)
+        const id = supplier.id ?? "-";
+        const name = supplier.name || supplier.nome || "-";
+        const email = supplier.email || "-";
+        const phone = supplier.phone || supplier.telefone || "-";
+        const city = supplier.city || supplier.cidade || "-";
+        const status = supplier.status || "ativo";
 
         tbody.insertAdjacentHTML("beforeend", `
-
             <tr>
-
-                <td>${supplier.id}</td>
-
-                <td>${supplier.name}</td>
-
-                <td>${supplier.email}</td>
-
-                <td>${supplier.phone || "-"}</td>
-
-                <td>${supplier.city || "-"}</td>
-
+                <td>${id}</td>
+                <td>${name}</td>
+                <td>${email}</td>
+                <td>${phone}</td>
+                <td>${city}</td>
                 <td>
-
-                    <span class="status-badge status-${supplier.status}">
-
-                        ${supplier.status}
-
+                    <span class="status-badge status-${status}">
+                        ${status}
                     </span>
-
                 </td>
-
                 <td>
-
-                    <button
-                        class="btn-edit"
-                        data-id="${supplier.id}">
-
-                        Editar
-
-                    </button>
-
-                    <button
-                        class="btn-delete"
-                        data-id="${supplier.id}">
-
-                        Excluir
-
-                    </button>
-
+                    <button class="btn-edit" data-id="${id}">Editar</button>
+                    <button class="btn-delete" data-id="${id}">Excluir</button>
                 </td>
-
             </tr>
-
         `);
-
     });
 
     configurarEventosFornecedor();
-
 }
-
 // ======================================================
 // EVENTOS
 // ======================================================
